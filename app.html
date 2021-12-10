@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+	<script src='dist/fhir-client-v2.js'></script>
+
+	<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.10.2/dayjs.min.js" integrity="sha512-0fcCRl828lBlrSCa8QJY51mtNqTcHxabaXVLPgw/jPA5Nutujh6CbTdDgRzl9aSPYW/uuE7c4SffFUQFBAy6lg==" crossorigin="anonymous"></script>
+
+  <style>
+    #note{width:90vw; padding:5vw; height:50vh;}
+
+  </style>
+</head>
+
+<body>
+  <h2>Simple Note Creator</h2>
+  <p id="priorNotes"></p>
+  <div id="main">
+
+    <textarea name="note" id="note">
+H&P:
+
+Chief complaint: Altered mental status.
+
+HPI: Patient is a 36 year old male with unknown past medical history brought in to the ED with new onset of altered mental status. The history is taken by his significant other, she reports that patient has been suffering from fevers for the last week, for the past three days he has also developed profuse sweeting and a rash in right forearm and in the palms of his hands. She reports that around 6 hours ago he became progressively more altered, less responsive and that she was unable to get him out the bed, also she reports that he has been complaining of mild chest and upper back pain. Upon questioning she admits that patient has a long term history of drug abuse including cocaine, cannabinoids and heroin abuse, the share needles occasionally she does not know when was the time he used any recreational drugs, he smokes 1 pack of cigarettes a day.
+
+Review of systems: 
+
+As denoted on HPI and:
+- Chest and upper back pain.
+- Rash Bilateral upper extremities.
+- Profuse spontaneous sweating.
+- Conjunctival injection
+- Shortness of breath
+
+Past medical history:
+- Drug abuse.
+- Depression.
+- History of left tibia fracture
+
+Past surgical history:
+- ORIF left tibia 
+
+Allergies:
+No known drug allergies.
+
+Social history:
+- Habitat: He Lives independently with significant other - Smoking status: 1 pack/day.
+
+Family History:
+- Not contributory.
+- No available information from parents. He does not have any children.
+
+Home medications:
+Fluoxetine: capsules 20 mg once daily by mouth.
+
+Vital signs:
+Weight: 70 kg
+Height: 179 cm Temperature: 42°C Heart rate: 120 bmp Respiratory rate: 18 rpm BP: 92/40 mmHg
+SpO2: 90%
+
+Physical Exam:
+- General: Disheveled appearing man. Profuse sweating.
+- HEENT: PERRL. Injected conjunctiva. Dry mucous membranes of oral cavity
+- Neck: supple. No masses. No thyromegaly. No bruits.
+- Lymph nodes: no lymphadenopathy
+- Cardio:
+o Holosystolic Heart murmur heard with maximal intensity at the left lower sternal border with clear radiation to the right lower sternal border. The murmur intensity increases with inspiration.
+o Possible S3 + present, no S4.
+o No chest pain elicited with palpation of left chest.
+- Pulmonary: No wheezes mild apical rales and crackles.
+- Skin:
+o Diffuse petechial rash on the trunk and extremities.
+o Subungual hemorrhage in the right index finger
+o Possible nodes at the tip of 3rd and 2nd toe of the right lower extremity o Scar from previous surgery in the left tibial area, well healed.
+- Psychiatry: Lethargic and oriented to self and place, not to time. Responds to some questions.
+- Abdomen: soft, non-tender, non-distended. No masses. No rebound/guarding. No hepatosplenomegaly. +BS
+- MSK: Normal range of motion in shoulders. Normal appearing extremities.
+- Neuro: CN II-XII grossly intact. No decrease in strength. No decrease in sensation.
+- Genitourinary: Normal external inspection. He is circumcised. There is no discharge.
+
+  
+Laboratory: 
+Hematology:
+CBC 
+WBC 22
+RBC 3.8 
+Hemoglobin 10.4
+MCV 80.6 
+MCHgb 94.6 
+Platelet count 500.000 
+Differential
+Neutrophil % 84 Lymphocytes 5.7 Monocyte 7.3 Eosinophil 0.3 Immature gran. % 2.3 
+Erythrocyte sedimentation rate 52
+
+Radiologic test:
+- Chest X-ray 
+See attached report.
+
+Assessment:
+IV drug user who presents critically ill, febrile, tachycardic and with altered mental status. His history and signs and symptoms are concerning for septicemia with possible endocarditis given pan-systolic heart murmur and elevated WBC and ESR. The CXR is concerning for mild pulmonary edema and unspecified pulmonary infiltration.
+
+Working diagnosis: 
+Diffuse inflammatory response due to septicemia and possible Infective endocarditis IVDU related.
+Plan:
+1. We plan to obtain CMP, PTT/INR, blood cultures x 2, sputum cultures, Urine cultures.
+2. We have requested and Medical Intensive care unit admission. Vitals
+and neurochecks q 1 hours.
+3. We will order a transthoracic echocardiogram and a CT of the head with and without
+contrast.
+4. He has been volume resuscitated in the ED with 2.5 L of Normal saline in the ED, we will
+continue a NS infusion at 85 cc/hr.
+5. Diet NPO.
+6. We plan to start wide spectrum antibiotic therapy once cultures have been obtained.
+7. Consultations: Infectious disease, cardiology.
+
+    </textarea>
+    <br>
+    <button id="submit">Create Note</button>
+  </div>
+
+	<script>
+
+		var myApp = {}
+
+    $(document).ready(function(){
+      $("#submit").click(function(){
+        $(this).prop("disabled", true)
+        createDocref()
+      })
+    })
+
+    FHIR.oauth2.ready()
+    .then(function(client){ 
+      myApp.smart = client
+      doRequests()
+    })
+
+    async function doRequests(){
+
+      var obs = await fetch(myApp.smart.state.serverUrl+"/DocumentReference?patient="+myApp.smart.patient.id,{
+        headers:{  
+          "Accept":"application/json+fhir",
+          "Authorization":"Bearer "+myApp.smart.state.tokenResponse.access_token
+        }
+        }).then(function(data){
+          return data
+      })
+
+      var response = await obs.json()
+      if (!response.entry){
+        $("#priorNotes").html("Eh, there are no notes yet, if you just made one, wait like 2-3 min")
+      }else{
+        $("#priorNotes").html("# of prior notes: "+response.entry.length)
+      }
+      console.log("All Documents", response)
+
+
+}
+
+async function createDocref(){
+
+      var data = {
+        "resourceType": "DocumentReference",
+        "status": "current",
+        "docStatus": "final",
+        "type": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "11488-4",
+              "display": "Consultation Note",
+              "userSelected": true
+            }
+          ],
+          "text": "Consultation Note"
+        },
+        "subject": {
+          "reference": "Patient/"+myApp.smart.patient.id
+        },
+        "author": [
+          {
+            "reference": "Practitioner/"+myApp.smart.user.id
+          }
+        ],
+        "authenticator": {
+          "reference": "Practitioner/"+myApp.smart.user.id
+        },
+        "content": [
+          {
+            "attachment": {
+              "contentType": "application/xml;charset=utf-8",
+              "data": btoa( $("#note").val() ),
+              "title": "History and Physical",
+              "creation": dayjs().format()
+            }
+          }
+        ],
+        "context": {
+          "period": {
+            "start": dayjs().format(),
+            "end": dayjs().format()
+          }
+        }
+      }
+      
+     
+      var obs = await fetch(myApp.smart.state.serverUrl+"/DocumentReference",{
+          headers:{  
+            "Accept":"application/json+fhir",
+            "Content-Type":"application/json+fhir",
+            "Authorization":"Bearer "+myApp.smart.state.tokenResponse.access_token
+          },
+          method: "POST",
+          body: JSON.stringify(data)
+        }).then(function(data){
+          alert("Created!  There is often a few minute lag to when it shows up")
+          window.location.reload()
+          
+      })
+
+}
+
+	</script>
+
+</body>
+
+</html>
