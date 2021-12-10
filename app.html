@@ -143,8 +143,7 @@ continue a NS infusion at 85 cc/hr.
 
       var obs = await fetch(myApp.smart.state.serverUrl+"/DocumentReference?patient="+myApp.smart.patient.id,{
         headers:{  
-          "Accept":"application/json+fhir",
-          "Authorization":"Bearer "+myApp.smart.state.tokenResponse.access_token
+          "Accept":"application/json+fhir"
         }
         }).then(function(data){
           return data
